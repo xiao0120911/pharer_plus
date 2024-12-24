@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>玩家历史分数</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f4f4f9; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        #score-container {
+            width: 300px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        #score-container h2 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+        #score-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #score-list li {
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="score-container">
+        <h2>玩家历史分数</h2>
+        <ul id="score-list">
+            <!-- 分数记录将动态插入到这里 -->
+        </ul>
+    </div>
+    <script>
+        // 获取 URL 中的玩家 ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const playerId = urlParams.get('playerId');
+
+        if (playerId) {
+            fetch(`http://127.0.0.1:5000/player/${playerId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const scoreList = document.getElementById('score-list');
+                    scoreList.innerHTML = '';
+
+                    data.scores.forEach(score => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `Score ID: ${score.id}, Score: ${score.score}`;
+                        scoreList.appendChild(listItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching player scores:', error);
+                });
+        } else {
+            alert("未指定玩家 ID！");
+        }
+    </script>
+</body>
+</html>

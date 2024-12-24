@@ -12,6 +12,7 @@ var livesText;
 var lifeLostText;
 var playing = false;
 var startButton;
+var historyButton;
 
 function preload() {
 	handleRemoteImagesOnJSFiddle();
@@ -23,8 +24,12 @@ function preload() {
     game.load.image('brick', 'img/brick.png');
     game.load.spritesheet('ball', 'img/wobble.png', 20, 20);
     game.load.spritesheet('button', 'img/button.png', 120, 40);
+    game.load.spritesheet('historyButton', 'img/button.png', 120, 40);
 }
 function create() {
+
+    addDefaultPlayer();
+
     game.physics.startSystem(Phaser.Physics.ARCADE);
     game.physics.arcade.checkCollision.down = false;
     ball = game.add.sprite(game.world.width*0.5, game.world.height-25, 'ball');
@@ -53,6 +58,10 @@ function create() {
 
     startButton = game.add.button(game.world.width*0.5, game.world.height*0.5, 'button', startGame, this, 1, 0, 2);
     startButton.anchor.set(0.5);
+
+    historyButton = game.add.button(game.world.width - 60, game.world.height - 30, 'historyButton', viewHistory, this, 1, 0, 2);
+    historyButton.anchor.set(0.5);
+    historyButton.scale.set(0.5);
 }
 function update() {
     game.physics.arcade.collide(ball, paddle, ballHitPaddle);
@@ -98,6 +107,8 @@ function ballHitBrick(ball, brick) {
     score += 10;
     scoreText.setText('Points: '+score);
     if(score === brickInfo.count.row*brickInfo.count.col*10) {
+        const playerId = 1;
+        saveScoreToDatabase(playerId, score);
         alert('You won the game, congratulations!');
         location.reload();
     }
@@ -113,8 +124,12 @@ function ballLeaveScreen() {
             lifeLostText.visible = false;
             ball.body.velocity.set(150, -150);
         }, this);
+        const playerId = 1;
+        saveScoreToDatabase(playerId, score);
     }
     else {
+        const playerId = 1;
+        saveScoreToDatabase(playerId, score);
         alert('You lost, game over!');
         location.reload();
     }
@@ -133,4 +148,63 @@ function startGame() {
 function handleRemoteImagesOnJSFiddle() {
 	game.load.baseURL = 'https://end3r.github.io/Gamedev-Phaser-Content-Kit/demos/';
 	game.load.crossOrigin = 'anonymous';
+}
+
+function viewHistory() {
+    const playerId = 1;
+    saveScoreToDatabase(playerId, score);
+    window.location.href = `scores.html?playerId=${playerId}`;
+}
+
+function saveScoreToDatabase(playerId, score) {
+    const apiUrl = 'http://127.0.0.1:5000/add_score';
+    const payload = {
+        player_id: playerId,
+        score: score
+    };
+
+    fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Score saved successfully:', data);
+    })
+    .catch(error => {
+        console.error('Error saving score:', error);
+    });
+}
+
+function addDefaultPlayer() {
+    const name = "Player1";
+
+    fetch('http://127.0.0.1:5000/add_player', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name})
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Default player added successfully:', data);
+            playerId = data.player_id;
+        })
+        .catch(error => {
+            console.error('Error adding default player:', error);
+        });
 }
